@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>title</title>
+		<script type="text/JavaScript" src="jsDraw2DX.js"></script>
+	</head>
+	<body>
+        <defs>
+            <marker id="Triangle"
+                    viewBox="0 0 10 10" 
+                    refX="0" refY="3"
+                    markerWidth="6" 
+                    markerHeight="6"
+                    fill="blue"
+                    orient="auto">
+                <path d="M 0 0 L 6 3 L 0 6 z" />
+            </marker>
+        </defs>
+		<div id="graphics" style="overflow:hidden;position:relative;width:1120px;height:470px;"></div> 
+		<script src="testData.js" type="text/javascript">
+		</script>
+<script type="text/JavaScript">
+
+    //Define graphics
+    var graphicsDiv=document.getElementById("graphics");
+    var gr = new jxGraphics(graphicsDiv);
+
+    //Define drawing pen/brush/font
+    var brushInfo = new jxBrush(new jxColor('#008B8B'));
+    var penBorder = new jxPen(new jxColor('gray'), 1);
+    var font = new jxFont();
+    font.size = '8pt';
+
+    graphicsDiv.onmousemove = getMouseXY;
+    var mouseX = 0, mouseY = 0;
+
+    //Info box
+    var infoBox = new jxRect(null, 160, 50, new jxPen(new jxColor('#008B8B'), 1), new jxBrush(new jxColor('white')));
+    var countryText = new jxText(null, null, font); countryText.brush = brushInfo;
+    var popText = new jxText(null, null, font); popText.brush = brushInfo;
+
+    //Background
+    var bg = new jxRect(new jxPoint(0, 0), 1120, 470, penBorder, new jxBrush(new jxColor('#ADD8E6')));
+    bg.draw(gr);
+    var title = new jxText(new jxPoint(10, 20), 'World Population Density Map', font, null, new jxBrush(new jxColor('black')));
+    title.draw(gr); 
+
+    //greenShade = new jxColor(255, 255, 255);
+    //var polyline = new jxPolyline([new jxPoint(400, 100), new jxPoint(200, 400)], penBorder, new jxBrush(greenShade));
+    //polyline.draw(gr);    
+    var marker = document.createElementNS("http://www.w3.org/2000/svg", "marker");
+    marker.setAttribute("id", "markerEnd");
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("markerWidth", "6");
+    marker.setAttribute("markerHeight", "6");
+    marker.setAttribute("refX", "0");
+    marker.setAttribute("refY", "3");
+    marker.setAttribute("orient", "auto");
+    marker.setAttribute("markerUnits", "strokeWidth");
+    //marker.setAttribute("d", "M 0 0 L 6 3 L 0 6 z");    
+    
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    marker.appendChild(path); 
+    path.setAttribute("d", "M 0 0 L 6 3 L 0 6 z");  
+    path.setAttribute('fill', 'blue');
+    gr.getDefs().appendChild(marker);
+    
+    var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    polyline.setAttribute("points", new jxPoint(50,10).x+ " 50, 70 70");
+    polyline.setAttribute("fill", "none");
+    polyline.setAttribute("stroke", "blue");
+    polyline.setAttribute("stroke-width", "7");
+    polyline.setAttribute("marker-end", "url(#markerEnd)");
+    gr.getSVG().appendChild(polyline);
+    
+    //CountryMap
+    var countryMap = {}
+
+    //Draw country border and fill color as per population density
+    //countriesData variable is from countriesData.js file
+    for (var i in countriesData) {
+        var country = countriesData[i];
+        countryMap[country.name] = country;
+        for (var j in country.border) {
+            var border = country.border[j];
+            var points = new Array(); 
+            for (var k in border) {
+                var vertex = border[k];
+                points[points.length]=new jxPoint(vertex[0], vertex[1]);
+            }
+            var f =Math.round(480 -country.population*480/300);
+            if (f > 255) {
+                if (f > 511)
+                    greenShade = new jxColor(255, 255, 255);
+                else
+                    greenShade = new jxColor(f - 255, 255, f - 255);
+            }
+            else {
+                if(f<36)
+                    greenShade = new jxColor(0, 35, 0);
+                else
+                    greenShade = new jxColor(0, f, 0);
+            }
+
+            var polygon = new jxPolygon(points, penBorder, new jxBrush(greenShade));
+
+            //Handle mouse events to show information
+            polygon.addEventListener('mousemove', showInfo)
+            polygon.addEventListener('mouseout', hideInfo)
+            polygon.addEventListener('click', showNeighbors)
+            polygon.country = country.name;
+            polygon.population = country.population;
+
+            country.polygon = polygon;
+
+            polygon.draw(gr);
+        }
+    }
+
+    //Display information box
+    function showInfo(evt, obj) {
+        if (lastClicked === undefined) {
+            penBorder.width = 4;
+            obj.draw(gr);
+        }
+
+        /*infoBox.point = new jxPoint(mouseX+5, mouseY+5);
+        countryText.point = new jxPoint(mouseX +15, mouseY + 25);
+        popText.point = new jxPoint(mouseX + 15, mouseY+ 45);
+
+        countryText.text = obj.country;
+        popText.text = 'Population: ' + obj.population + ' /sqKm';
+
+        infoBox.draw(gr);
+        countryText.draw(gr);
+        popText.draw(gr);*/
+    }
+
+    //Hide information box
+    function hideInfo(evt, obj) {
+        if (lastClicked === undefined) {
+            penBorder.width = 1;
+            obj.draw(gr);
+        }
+
+        /*infoBox.hide();
+        countryText.hide();
+        popText.hide();*/
+    }
+
+    var lastClicked;
+    var arrows = [];
+    function showNeighbors(evt, obj) {
+        var country = countryMap[obj.country];
+        if (lastClicked != obj.country) {			
+            for (var i in country.additionalLinks) {
+                //countryMap[country.additionalLinks[i]].polygon.draw(gr);    
+                var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+                polyline.setAttribute("points", country.polygon.points[0].x + " " + country.polygon.points[0].y + 
+                                      ", " + countryMap[country.additionalLinks[i]].polygon.points[0].x + " " + countryMap[country.additionalLinks[i]].polygon.points[0].y);
+                polyline.setAttribute("fill", "none");
+                polyline.setAttribute("stroke", "blue");
+                polyline.setAttribute("stroke-width", "7");
+                polyline.setAttribute("marker-end", "url(#markerEnd)");
+                arrows[arrows.length] = polyline;
+                gr.getSVG().appendChild(polyline);
+                
+            }
+            lastClicked = obj.country;
+        }
+        else 
+        {
+            for(var i in arrows) {
+                gr.getSVG().removeChild(arrows[i]);
+                gr.removeShape(arrows[i]);
+                delete arrows[i];
+            }
+            lastClicked = undefined;
+        }
+    }
+
+    //Get the mouse cursor  position
+    function getMouseXY(e) {
+        if (document.all) //For IE
+        {
+            mouseX = event.clientX + document.body.parentElement.scrollLeft;
+            mouseY = event.clientY + document.body.parentElement.scrollTop;
+        } else {
+            mouseX = e.pageX
+            mouseY = e.pageY
+        }
+
+        if (mouseX < 0) { mouseX = 0 }
+        if (mouseY < 0) { mouseY = 0 }
+
+        mouseX = mouseX - graphicsDiv.offsetLeft;
+        mouseY = mouseY - graphicsDiv.offsetTop;
+
+    return true;
+    }
+
+</script>
+	</body>
+</html>
