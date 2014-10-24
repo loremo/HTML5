@@ -7,7 +7,7 @@ with open('countriesData_small.js') as f:
 
 countries = {};
 for line in content:
-    if not line.startswith('{"code":'):
+    if not line.startswith('{"'):
         continue
     line = line.strip()
     line = line[0:-1]
@@ -18,38 +18,54 @@ for country, borders in countries.iteritems():
     print(country + ' has ' + str(len(borders)) + ' borders')
     polygons = [];
     for border in borders:
-        print(len(border))
+        #print(len(border))
         if len(border) < 3:
-            continue;
+            continue
         p = Polygon(border)
+        if p.area < 5:
+            continue
+        print("current border's area: " + str(p.area))
         polygons.append(p)
-    polygons = MultiPolygon(polygons)
-    countries[country] = polygons
+    if len(polygons) > 1:
+        areas = [p.area for p in polygons]
+        countries[country] = polygons[areas.index(max(areas))]
+    elif len(polygons) == 1:
+        countries[country] = polygons[0]
+    else:
+        raise('Country must contain at least one Polygon')
+ 
+for this_country, this_polygon in countries.iteritems():
+    #print(this_country)
+    #print(this_polygon)
+    try:
+        print('representative point of ' + this_country + ': ' + str(this_polygon.representative_point()))
+    except ValueError: 
+        print('representative point of ' + this_country + ': ' + str(this_polygon.convex_hull.representative_point()))
+    for other_country, other_polygon in countries.iteritems():
+        if this_country == other_country:
+            continue
+        if this_polygon.intersects(other_polygon):
+            print(this_country + ' has a border with ' + other_country)
+    
     
 ger = countries['Germany']
-ger = ger.geoms[4]
-ger = ger.convex_hull
 pol = countries['Poland']
-pol = pol[0]
-pol = pol.convex_hull
 spa = countries['Spain']
-spa = spa[11]
-spa = spa.convex_hull
+fra = countries['France']
 print('Germany')
-print(ger)
+#print(ger)
 print('---------------------')
 print('Poland')
-print(pol)
+#print(pol)
 print('---------------------')
 print('Spain')
-print(spa)
+#print(spa)
 print('---------------------')
 print(ger.area)
 print(pol.area)
 print(spa.area)
+print(fra.area)
 print('---------------------')
-print(ger.intersection(pol))
+#print(ger.representative_point())
 
-
-#json.loads(content)
 
