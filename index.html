@@ -54,7 +54,7 @@
     marker.setAttribute("viewBox", "0 0 10 10");
     marker.setAttribute("markerWidth", "6");
     marker.setAttribute("markerHeight", "6");
-    marker.setAttribute("refX", "0");
+    marker.setAttribute("refX", "4");
     marker.setAttribute("refY", "3");
     marker.setAttribute("orient", "auto");
     marker.setAttribute("markerUnits", "strokeWidth");
@@ -112,6 +112,7 @@
             polygon.country = country.name;
 
             country.polygon = polygon;
+            country.center = new jxPoint(country.center[0], country.center[1])
 
             polygon.draw(gr);
         }
@@ -154,13 +155,14 @@
         var country = countryMap[obj.country];
         if (lastClicked != obj.country) {			
             for (var i in country.neighbor) {
+                if (country.name == countryMap[country.neighbor[i]].name) continue;
                 //countryMap[country.neighbor[i]].polygon.draw(gr);    
                 var polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-                polyline.setAttribute("points", country.polygon.points[0].x + " " + country.polygon.points[0].y + 
-                                      ", " + countryMap[country.neighbor[i]].polygon.points[0].x + " " + countryMap[country.neighbor[i]].polygon.points[0].y);
+                polyline.setAttribute("points", country.center.x + " " + country.center.y + 
+                                      ", " + countryMap[country.neighbor[i]].center.x + " " + countryMap[country.neighbor[i]].center.y);
                 polyline.setAttribute("fill", "none");
                 polyline.setAttribute("stroke", "blue");
-                polyline.setAttribute("stroke-width", "7");
+                polyline.setAttribute("stroke-width", "5");
                 polyline.setAttribute("marker-end", "url(#markerEnd)");
                 arrows[arrows.length] = polyline;
                 gr.getSVG().appendChild(polyline);
