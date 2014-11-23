@@ -74,6 +74,10 @@
     polyline.setAttribute("marker-end", "url(#markerEnd)");
     gr.getSVG().appendChild(polyline);
     
+    // 0 = boid
+    // 1 = country selected
+    var state = 0;
+    
     //CountryMap
     var countryMap = {}
 
@@ -149,11 +153,19 @@
         popText.hide();*/
     }
 
-    var lastClicked;
+    var lastClicked = "";
     var arrows = [];
     function showNeighbors(evt, obj) {
         var country = countryMap[obj.country];
-        if (lastClicked != obj.country) {			
+        //if (lastClicked != obj.country) {	
+        //alert(["lastClicked = ", lastClicked, "county = ", country.name, "country.neighbor = ", country.neighbor, "country.neighbor.indexOf(lastClicked) = ", country.neighbor.indexOf(lastClicked)])
+        if (state == 0 || country.neighbor.indexOf(lastClicked) < 0) {	
+            state = 1            
+            for(var i in arrows) {
+                gr.getSVG().removeChild(arrows[i]);
+                gr.removeShape(arrows[i]);
+                delete arrows[i];
+            }
             for (var i in country.neighbor) {
                 if (country.name == countryMap[country.neighbor[i]].name) continue;
                 //countryMap[country.neighbor[i]].polygon.draw(gr);    
@@ -172,12 +184,8 @@
         }
         else 
         {
-            for(var i in arrows) {
-                gr.getSVG().removeChild(arrows[i]);
-                gr.removeShape(arrows[i]);
-                delete arrows[i];
-            }
-            lastClicked = undefined;
+            alert("attack!")
+            //lastClicked = "";
         }
     }
 
